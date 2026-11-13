@@ -1,0 +1,14 @@
+# compiled binaries
+*.out
+*.o
+fcfs
+sjf
+srtf
+round_robin
+priority_preemptive
+demand_paging
+worst_fit
+fork_wait
+file_copy
+*_copy.dat
+.DS_Store

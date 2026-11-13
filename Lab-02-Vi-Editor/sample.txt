@@ -1,0 +1,2 @@
+Welcome to the UNIX lab
+This is a text file for vi editor operations.
