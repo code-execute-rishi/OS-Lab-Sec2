@@ -1,9 +1,5 @@
-/*
- * Lab 4 - Demonstrate fork() and wait().
- *
- * The child gets its own copy of the parent's memory, so incrementing
- * global_var / local_var in the child does not change the parent's values.
- */
+// Lab 4: Demonstrate the usage of fork() and wait() system calls
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,10 +8,10 @@
 
 int global_var = 10;
 
-int main(void)
-{
+int main() {
     int local_var = 20;
-    pid_t pid = fork();
+    pid_t pid;
+    pid = fork();
 
     if (pid < 0) {
         perror("Fork failed");
@@ -26,8 +22,8 @@ int main(void)
         printf("Parent PID: %d\n", getppid());
         global_var++;
         local_var++;
-        printf("Child's global variable ++ : %d\n", global_var);
-        printf("Child's local variable ++ : %d\n", local_var);
+        printf("Child's Global variable ++ : %d\n", global_var);
+        printf("Child's Local variable ++ : %d\n", local_var);
         exit(0);
     } else {
         wait(NULL);
@@ -35,8 +31,8 @@ int main(void)
         printf("Parent PID: %d\n", getpid());
         printf("Parent's Parent PID (Shell): %d\n", getppid());
         printf("Child PID: %d\n", pid);
-        printf("Parent's global variable: %d\n", global_var);
-        printf("Parent's local variable: %d\n", local_var);
+        printf("Parent's Global variable: %d\n", global_var);
+        printf("Parent's Local variable: %d\n", local_var);
     }
     return 0;
 }

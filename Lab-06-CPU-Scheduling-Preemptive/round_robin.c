@@ -1,19 +1,10 @@
-/*
- * Lab 6(b) - CPU Scheduling: Round Robin (RR).
- *
- * Input : n, then n lines of "pid arrival_time burst_time", then time quantum
- * Output: per-process TAT / WT / RT and their averages.
- *
- * p[i] = { pid, AT, BT, remaining, start, TAT, WT, RT }
- * Newly arrived processes are queued before the preempted process.
- */
+// Lab 6(b): CPU scheduling algorithm - RR
+
 #include <stdio.h>
 
-int main(void)
-{
+int main() {
     int n, tq;
     scanf("%d", &n);
-
     int p[n][8];
     for (int i = 0; i < n; i++) {
         scanf("%d %d %d", &p[i][0], &p[i][1], &p[i][2]);
@@ -25,8 +16,9 @@ int main(void)
     int queue[10000];
     int head = 0, tail = 0;
     int visited[n];
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
         visited[i] = 0;
+    }
 
     int curr = 0, cmpl = 0;
     for (int i = 0; i < n; i++) {
@@ -37,7 +29,7 @@ int main(void)
     }
 
     while (cmpl < n) {
-        if (head == tail) {         /* ready queue empty: CPU idle */
+        if (head == tail) {
             curr++;
             for (int i = 0; i < n; i++) {
                 if (p[i][1] <= curr && !visited[i] && p[i][3] > 0) {
@@ -49,16 +41,14 @@ int main(void)
         }
 
         int idx = queue[head++];
-        if (p[idx][4] == -1) {      /* first time on CPU */
+        if (p[idx][4] == -1) {
             p[idx][4] = curr;
             p[idx][7] = curr - p[idx][1];
         }
 
-        int run = (p[idx][3] < tq) ? p[idx][3] : tq;
+        int run = (p[idx][3] < tq ? p[idx][3] : tq);
         p[idx][3] -= run;
         curr += run;
-
-        /* enqueue processes that arrived during this slice */
         for (int i = 0; i < n; i++) {
             if (p[i][1] <= curr && !visited[i] && p[i][3] > 0) {
                 queue[tail++] = i;
@@ -76,10 +66,9 @@ int main(void)
     }
 
     double tat = 0, wt = 0, rt = 0;
-    printf("PID\tAT\tBT\tTAT\tWT\tRT\n");
     for (int i = 0; i < n; i++) {
-        printf("%d\t%d\t%d\t%d\t%d\t%d\n", p[i][0], p[i][1], p[i][2],
-               p[i][5], p[i][6], p[i][7]);
+        printf("%d %d %d %d %d %d\n", p[i][0],
+               p[i][1], p[i][2], p[i][5], p[i][6], p[i][7]);
         tat += p[i][5];
         wt += p[i][6];
         rt += p[i][7];

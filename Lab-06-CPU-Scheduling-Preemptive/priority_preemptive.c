@@ -1,24 +1,15 @@
-/*
- * Lab 6(c) - CPU Scheduling: Preemptive Priority.
- *
- * Input : n, then n lines of "pid arrival_time burst_time priority"
- *         (lower number = higher priority)
- * Output: per-process TAT / WT / RT and their averages.
- *
- * arr[i] = { pid, AT, BT, priority, remaining, start }
- * res[i] = { pid, priority, AT, BT, TAT, WT, RT }
- */
+// Lab 6(c): CPU scheduling algorithm - Pre-emptive Priority
+
 #include <stdio.h>
 
-int main(void)
-{
+int main() {
     int n;
     scanf("%d", &n);
-
     int arr[n][6];
     int res[n][7];
     for (int i = 0; i < n; i++) {
-        scanf("%d %d %d %d", &arr[i][0], &arr[i][1], &arr[i][2], &arr[i][3]);
+        scanf("%d %d %d %d", &arr[i][0], &arr[i][1],
+              &arr[i][2], &arr[i][3]);
         arr[i][4] = arr[i][2];
         arr[i][5] = -1;
         res[i][0] = arr[i][0];
@@ -40,20 +31,16 @@ int main(void)
                 }
             }
         }
-
-        if (idx == -1) {            /* nothing has arrived yet: CPU idle */
+        if (idx == -1) {
             curr++;
             continue;
         }
-
-        if (arr[idx][5] == -1) {    /* first time on CPU */
+        if (arr[idx][5] == -1) {
             arr[idx][5] = curr;
             res[idx][6] = curr - arr[idx][1];
         }
-
         arr[idx][4]--;
         curr++;
-
         if (arr[idx][4] == 0) {
             cmpl++;
             res[idx][4] = curr - arr[idx][1];
@@ -62,10 +49,11 @@ int main(void)
     }
 
     double tat = 0, wt = 0, rt = 0;
-    printf("PID\tPRI\tAT\tBT\tTAT\tWT\tRT\n");
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < 7; j++)
-            printf(j < 6 ? "%d\t" : "%d\n", res[i][j]);
+        for (int j = 0; j < 7; j++) {
+            printf("%d ", res[i][j]);
+        }
+        printf("\n");
         tat += res[i][4];
         wt += res[i][5];
         rt += res[i][6];
