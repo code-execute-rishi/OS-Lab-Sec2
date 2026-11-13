@@ -1,131 +1,108 @@
 // Lab 8: Simulate contiguous memory allocation using the worst-fit algorithm
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-typedef struct Block {
-    int start, size, is_free, pid;
-    struct Block* next;
-} Block;
+// memory = list of blocks in address order; owner = -1 means the block is a free hole
+int start[100], size[100], owner[100], count = 1;
 
-Block* head = NULL;
-
-void init(int size) {
-    head = malloc(sizeof(Block));
-    head->start = 0;
-    head->size = size;
-    head->is_free = 1;
-    head->pid = -1;
-    head->next = NULL;
+int freeMemory() {
+    int avail = 0;
+    for (int i = 0; i < count; i++)
+        if (owner[i] == -1)
+            avail += size[i];
+    return avail;
 }
 
-void metrics(int* occ, int* avail, int* max_hole, int* ext_frag) {
-    *occ = 0;
-    *avail = 0;
-    *max_hole = 0;
-    for (Block* c = head; c; c = c->next) {
-        if (c->is_free) {
-            *avail += c->size;
-            if (c->size > *max_hole) {
-                *max_hole = c->size;
-            }
-        } else {
-            *occ += c->size;
-        }
+void display(int ev_no, int time, int arriving, int pid, int psize, char *msg) {
+    int occ = 0, avail = freeMemory(), max_hole = 0;
+    for (int i = 0; i < count; i++) {
+        if (owner[i] != -1)
+            occ += size[i];
+        else if (size[i] > max_hole)
+            max_hole = size[i];
     }
-    *ext_frag = (*avail == 0 ? 0 : *avail - *max_hole);
-}
 
-void display(int ev_no, int time, char* type, int pid,
-             int psize, char* msg) {
-    int occ, avail, max_hole, ext_frag;
-    metrics(&occ, &avail, &max_hole, &ext_frag);
-    if (!strcmp(type, "ARRIVE")) {
-        printf("Event %d: Time %d ARRIVE P%d %d\n",
-               ev_no, time, pid, psize);
-    } else {
-        printf("Event %d: Time %d LEAVE P%d\n",
-               ev_no, time, pid);
-    }
+    if (arriving)
+        printf("Event %d: Time %d ARRIVE P%d %d\n", ev_no, time, pid, psize);
+    else
+        printf("Event %d: Time %d LEAVE P%d\n", ev_no, time, pid);
+
     printf("Result: %s\nMemory: ", msg);
-    for (Block* c = head; c; c = c->next) {
-        if (c->is_free) {
-            printf(" (%d, %d, FREE)", c->start, c->size);
-        } else {
-            printf(" (%d, %d, P%d)", c->start, c->size, c->pid);
-        }
+    for (int i = 0; i < count; i++) {
+        if (owner[i] == -1)
+            printf(" (%d, %d, FREE)", start[i], size[i]);
+        else
+            printf(" (%d, %d, P%d)", start[i], size[i], owner[i]);
     }
     printf("\nOccupied: %d KB\nAvailable: %d KB\n"
            "Largest hole: %d KB\nExternal Fragmentation: %d KB\n\n",
-           occ, avail, max_hole, ext_frag);
+           occ, avail, max_hole, avail - max_hole);
 }
 
 void arrive(int time, int pid, int psize, int ev_no) {
-    Block* target = NULL;
-    int max_s = -1;
-    for (Block* c = head; c; c = c->next) {
-        if (c->is_free && c->size >= psize) {
-            if (c->size > max_s || (c->size == max_s &&
-                target && c->start < target->start)) {
-                max_s = c->size;
-                target = c;
-            }
-        }
-    }
-    if (!target) {
-        int occ, avail, max_hole, ext_frag;
-        metrics(&occ, &avail, &max_hole, &ext_frag);
-        display(ev_no, time, "ARRIVE", pid, psize, (avail >= psize) ?
+    // worst fit: choose the LARGEST free hole that is big enough
+    int w = -1;
+    for (int i = 0; i < count; i++)
+        if (owner[i] == -1 && size[i] >= psize && (w == -1 || size[i] > size[w]))
+            w = i;
+
+    if (w == -1) {
+        display(ev_no, time, 1, pid, psize, (freeMemory() >= psize) ?
                 "Allocation failed - external fragmentation" :
                 "Allocation failed - insufficient total free memory");
         return;
     }
-    if (target->size == psize) {
-        target->is_free = 0;
-        target->pid = pid;
-    } else {
-        Block* n = malloc(sizeof(Block));
-        n->start = target->start + psize;
-        n->size = target->size - psize;
-        n->is_free = 1;
-        n->pid = -1;
-        n->next = target->next;
-        target->size = psize;
-        target->is_free = 0;
-        target->pid = pid;
-        target->next = n;
+
+    if (size[w] > psize) {
+        // split: shift later blocks right and put the leftover hole after this one
+        for (int i = count; i > w + 1; i--) {
+            start[i] = start[i - 1];
+            size[i] = size[i - 1];
+            owner[i] = owner[i - 1];
+        }
+        start[w + 1] = start[w] + psize;
+        size[w + 1] = size[w] - psize;
+        owner[w + 1] = -1;
+        count++;
+        size[w] = psize;
     }
-    display(ev_no, time, "ARRIVE", pid, psize, "Allocated");
+    owner[w] = pid;
+    display(ev_no, time, 1, pid, psize, "Allocated");
 }
 
 void leave(int time, int pid, int ev_no) {
-    for (Block* c = head; c; c = c->next) {
-        if (!c->is_free && c->pid == pid) {
-            c->is_free = 1;
-            c->pid = -1;
+    for (int i = 0; i < count; i++)
+        if (owner[i] == pid) {
+            owner[i] = -1;
             break;
         }
-    }
-    for (Block* c = head; c && c->next;) {
-        if (c->is_free && c->next->is_free) {
-            c->size += c->next->size;
-            Block* temp = c->next;
-            c->next = c->next->next;
-            free(temp);
+
+    // merge neighbouring free holes into one
+    for (int i = 0; i < count - 1;) {
+        if (owner[i] == -1 && owner[i + 1] == -1) {
+            size[i] += size[i + 1];
+            for (int j = i + 1; j < count - 1; j++) {
+                start[j] = start[j + 1];
+                size[j] = size[j + 1];
+                owner[j] = owner[j + 1];
+            }
+            count--;
         } else {
-            c = c->next;
+            i++;
         }
     }
-    display(ev_no, time, "LEAVE", pid, 0, "Released");
+    display(ev_no, time, 0, pid, 0, "Released");
 }
 
 int main() {
     int mem_size, events;
-    if (scanf("%d %d", &mem_size, &events) != 2) {
+    if (scanf("%d %d", &mem_size, &events) != 2)
         return 0;
-    }
-    init(mem_size);
+    start[0] = 0;
+    size[0] = mem_size;
+    owner[0] = -1;
+
     for (int i = 1; i <= events; i++) {
         int time, pid, psize;
         char type[10];

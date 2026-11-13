@@ -2,79 +2,63 @@
 
 #include <stdio.h>
 
+int n, tq, t = 0;
+int pid[100], at[100], bt[100], rem[100], tat[100], wt[100], rt[100], inq[100];
+int queue[10000], head = 0, tail = 0;
+
+// put every process that has arrived (and was never queued) at the back of the queue
+void addArrivals() {
+    for (int i = 0; i < n; i++)
+        if (!inq[i] && at[i] <= t) {
+            queue[tail++] = i;
+            inq[i] = 1;
+        }
+}
+
 int main() {
-    int n, tq;
     scanf("%d", &n);
-    int p[n][8];
     for (int i = 0; i < n; i++) {
-        scanf("%d %d %d", &p[i][0], &p[i][1], &p[i][2]);
-        p[i][3] = p[i][2];
-        p[i][4] = -1;
+        scanf("%d %d %d", &pid[i], &at[i], &bt[i]);
+        rem[i] = bt[i];
+        rt[i] = -1;
     }
     scanf("%d", &tq);
 
-    int queue[10000];
-    int head = 0, tail = 0;
-    int visited[n];
-    for (int i = 0; i < n; i++) {
-        visited[i] = 0;
-    }
-
-    int curr = 0, cmpl = 0;
-    for (int i = 0; i < n; i++) {
-        if (p[i][1] == 0) {
-            queue[tail++] = i;
-            visited[i] = 1;
-        }
-    }
-
-    while (cmpl < n) {
-        if (head == tail) {
-            curr++;
-            for (int i = 0; i < n; i++) {
-                if (p[i][1] <= curr && !visited[i] && p[i][3] > 0) {
-                    queue[tail++] = i;
-                    visited[i] = 1;
-                }
-            }
+    int done = 0;
+    while (done < n) {
+        addArrivals();
+        if (head == tail) {     // queue empty: CPU idle
+            t++;
             continue;
         }
 
-        int idx = queue[head++];
-        if (p[idx][4] == -1) {
-            p[idx][4] = curr;
-            p[idx][7] = curr - p[idx][1];
-        }
+        int c = queue[head++];  // take the process at the front
+        if (rt[c] == -1)
+            rt[c] = t - at[c];
 
-        int run = (p[idx][3] < tq ? p[idx][3] : tq);
-        p[idx][3] -= run;
-        curr += run;
-        for (int i = 0; i < n; i++) {
-            if (p[i][1] <= curr && !visited[i] && p[i][3] > 0) {
-                queue[tail++] = i;
-                visited[i] = 1;
-            }
-        }
+        int run = rem[c] < tq ? rem[c] : tq;   // run for one time quantum
+        rem[c] -= run;
+        t += run;
 
-        if (p[idx][3] == 0) {
-            cmpl++;
-            p[idx][5] = curr - p[idx][1];
-            p[idx][6] = p[idx][5] - p[idx][2];
+        if (rem[c] == 0) {
+            done++;
+            tat[c] = t - at[c];
+            wt[c] = tat[c] - bt[c];
         } else {
-            queue[tail++] = idx;
+            addArrivals();          // new arrivals go in first,
+            queue[tail++] = c;      // then this process goes to the back
         }
     }
 
-    double tat = 0, wt = 0, rt = 0;
+    double a = 0, b = 0, r = 0;
     for (int i = 0; i < n; i++) {
-        printf("%d %d %d %d %d %d\n", p[i][0],
-               p[i][1], p[i][2], p[i][5], p[i][6], p[i][7]);
-        tat += p[i][5];
-        wt += p[i][6];
-        rt += p[i][7];
+        printf("%d %d %d %d %d %d\n", pid[i], at[i], bt[i], tat[i], wt[i], rt[i]);
+        a += tat[i];
+        b += wt[i];
+        r += rt[i];
     }
-    printf("Average Turnaround Time = %.2f\n", tat / n);
-    printf("Average Waiting Time = %.2f\n", wt / n);
-    printf("Average Response Time = %.2f\n", rt / n);
+    printf("Average Turnaround Time = %.2f\n", a / n);
+    printf("Average Waiting Time = %.2f\n", b / n);
+    printf("Average Response Time = %.2f\n", r / n);
     return 0;
 }

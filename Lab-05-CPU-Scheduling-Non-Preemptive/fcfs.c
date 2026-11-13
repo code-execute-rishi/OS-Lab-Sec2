@@ -5,54 +5,39 @@
 int main() {
     int n;
     scanf("%d", &n);
-    int arr[n][6];
+    int pid[n], at[n], bt[n], tat[n], wt[n], fin[n];
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < 3; j++) {
-            scanf("%d", &arr[i][j]);
-        }
+        scanf("%d %d %d", &pid[i], &at[i], &bt[i]);
+        fin[i] = 0;
     }
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
-            if (arr[j][1] > arr[j + 1][1]) {
-                for (int k = 0; k < 3; k++) {
-                    int temp;
-                    temp = arr[j][k];
-                    arr[j][k] = arr[j + 1][k];
-                    arr[j + 1][k] = temp;
-                }
-            }
-        }
-    }
-
-    int t = 0;
+    int t = 0, done = 0;
     float a = 0, b = 0;
-    for (int i = 0; i < n; i++) {
-        if (arr[i][1] > t) {
-            t = arr[i][1];
+    while (done < n) {
+        // pick the arrived process that came first
+        int c = -1;
+        for (int i = 0; i < n; i++)
+            if (!fin[i] && at[i] <= t && (c == -1 || at[i] < at[c]))
+                c = i;
+
+        if (c == -1) {          // nothing has arrived: CPU idle
+            t++;
+            continue;
         }
-        arr[i][4] = t - arr[i][1];
-        arr[i][5] = arr[i][4];
-        arr[i][3] = t + arr[i][2] - arr[i][1];
-        t += arr[i][2];
-        a += arr[i][3];
-        b += arr[i][4];
+
+        wt[c] = t - at[c];      // waited from arrival until now
+        t += bt[c];             // run it completely
+        tat[c] = t - at[c];
+        fin[c] = 1;
+        done++;
+        a += tat[c];
+        b += wt[c];
     }
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            if (i + 1 == arr[j][0]) {
-                printf("%d %d %d %d %d %d\n",
-                       arr[j][0], arr[j][1], arr[j][2],
-                       arr[j][3], arr[j][4], arr[j][5]);
-                break;
-            }
-        }
-    }
+    for (int i = 0; i < n; i++)
+        printf("%d %d %d %d %d %d\n", pid[i], at[i], bt[i], tat[i], wt[i], wt[i]);
 
-    a = a / n;
-    b = b / n;
-    printf("Average Turnaround Time = %.2f\n", a);
-    printf("Average Waiting Time = %.2f\n", b);
-    printf("Average Response Time = %.2f\n", b);
+    printf("Average Turnaround Time = %.2f\n", a / n);
+    printf("Average Waiting Time = %.2f\n", b / n);
+    printf("Average Response Time = %.2f\n", b / n);
 }

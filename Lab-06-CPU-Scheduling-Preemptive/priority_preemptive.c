@@ -5,61 +5,48 @@
 int main() {
     int n;
     scanf("%d", &n);
-    int arr[n][6];
-    int res[n][7];
+    int pid[n], at[n], bt[n], pr[n], rem[n], tat[n], wt[n], rt[n];
     for (int i = 0; i < n; i++) {
-        scanf("%d %d %d %d", &arr[i][0], &arr[i][1],
-              &arr[i][2], &arr[i][3]);
-        arr[i][4] = arr[i][2];
-        arr[i][5] = -1;
-        res[i][0] = arr[i][0];
-        res[i][1] = arr[i][3];
-        res[i][2] = arr[i][1];
-        res[i][3] = arr[i][2];
+        scanf("%d %d %d %d", &pid[i], &at[i], &bt[i], &pr[i]);
+        rem[i] = bt[i];
+        rt[i] = -1;
     }
 
-    int curr = 0, cmpl = 0;
-    while (cmpl < n) {
-        int idx = -1, mx = 100000;
-        for (int i = 0; i < n; i++) {
-            if (arr[i][1] <= curr && arr[i][4] > 0) {
-                if (arr[i][3] < mx) {
-                    mx = arr[i][3];
-                    idx = i;
-                } else if (arr[i][3] == mx && arr[i][1] < arr[idx][1]) {
-                    idx = i;
-                }
-            }
-        }
-        if (idx == -1) {
-            curr++;
+    int t = 0, done = 0;
+    while (done < n) {
+        // every 1 ms: pick the arrived process with the best priority (lower number = higher)
+        int c = -1;
+        for (int i = 0; i < n; i++)
+            if (at[i] <= t && rem[i] > 0 &&
+                (c == -1 || pr[i] < pr[c] || (pr[i] == pr[c] && at[i] < at[c])))
+                c = i;
+
+        if (c == -1) {          // nothing has arrived: CPU idle
+            t++;
             continue;
         }
-        if (arr[idx][5] == -1) {
-            arr[idx][5] = curr;
-            res[idx][6] = curr - arr[idx][1];
-        }
-        arr[idx][4]--;
-        curr++;
-        if (arr[idx][4] == 0) {
-            cmpl++;
-            res[idx][4] = curr - arr[idx][1];
-            res[idx][5] = res[idx][4] - arr[idx][2];
+
+        if (rt[c] == -1)        // first time on the CPU
+            rt[c] = t - at[c];
+        rem[c]--;               // run for 1 ms
+        t++;
+
+        if (rem[c] == 0) {
+            done++;
+            tat[c] = t - at[c];
+            wt[c] = tat[c] - bt[c];
         }
     }
 
-    double tat = 0, wt = 0, rt = 0;
+    double a = 0, b = 0, r = 0;
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < 7; j++) {
-            printf("%d ", res[i][j]);
-        }
-        printf("\n");
-        tat += res[i][4];
-        wt += res[i][5];
-        rt += res[i][6];
+        printf("%d %d %d %d %d %d %d \n", pid[i], pr[i], at[i], bt[i], tat[i], wt[i], rt[i]);
+        a += tat[i];
+        b += wt[i];
+        r += rt[i];
     }
-    printf("Average Turnaround Time = %.2f\n", tat / n);
-    printf("Average Waiting Time = %.2f\n", wt / n);
-    printf("Average Response Time = %.2f\n", rt / n);
+    printf("Average Turnaround Time = %.2f\n", a / n);
+    printf("Average Waiting Time = %.2f\n", b / n);
+    printf("Average Response Time = %.2f\n", r / n);
     return 0;
 }
